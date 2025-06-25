@@ -1,0 +1,25 @@
+{
+  "name": "student-performance-predictor",
+  "version": "1.0.0",
+  "description": "Student Performance Prediction System using Machine Learning",
+  "main": "app.py",
+  "scripts": {
+    "build": "echo 'Python application - no build step required'",
+    "start": "streamlit run app.py",
+    "test": "python test_system.py"
+  },
+  "keywords": [
+    "machine-learning",
+    "education",
+    "python",
+    "streamlit",
+    "tensorflow"
+  ],
+  "author": "Student Performance Predictor Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+} 

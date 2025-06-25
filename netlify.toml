@@ -1,15 +1,30 @@
 [build]
-  command = "pip install -r requirements.txt && streamlit run app.py"
+  command = "echo 'Python application - deploying static files only'"
   publish = "."
+  functions = "functions"
 
 [build.environment]
   PYTHON_VERSION = "3.9"
-  PIP_VERSION = "21.3.1"
+  NODE_VERSION = "16"
 
+# Redirect all requests to a static page explaining the deployment
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-[functions]
-  directory = "functions" 
+# Handle Python-specific files
+[[headers]]
+  for = "*.py"
+  [headers.values]
+    Content-Type = "text/plain"
+
+[[headers]]
+  for = "*.h5"
+  [headers.values]
+    Content-Type = "application/octet-stream"
+
+[[headers]]
+  for = "*.pkl"
+  [headers.values]
+    Content-Type = "application/octet-stream" 
