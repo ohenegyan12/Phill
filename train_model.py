@@ -130,40 +130,38 @@ class ModelTrainer:
             raise
     
     def _collect_data(self) -> pd.DataFrame:
-        """Collect and prepare the dataset"""
-        print("Loading UCI-style student performance dataset...")
-        df = self.collector.load_uci_dataset()
-        
-        # Get dataset information
-        info = self.collector.get_data_info(df)
+        """Collect and prepare the dataset (CSV only)"""
+        print("Loading StudentPerformanceFactors.csv dataset...")
+        df = pd.read_csv('data/StudentPerformanceFactors.csv')
+        info = {'shape': df.shape, 'target_column': 'Exam_Score'}
         self.results['data_info'] = info
-        
         print(f"Dataset loaded: {info['shape'][0]} samples, {info['shape'][1]} features")
         print(f"Target variable: {info['target_column']}")
-        
-        # Save raw data
-        self.collector.save_dataset(df, 'data/raw_student_data.csv')
-        
         return df
     
     def _preprocess_data(self, df: pd.DataFrame) -> tuple:
-        """Preprocess the dataset"""
-        print("Preprocessing data...")
-        
+        """Preprocess the dataset (selected features only)"""
+        print("Preprocessing data (selected features)...")
         X_train, X_test, y_train, y_test = self.preprocessor.preprocess_data(
             df,
-            target_column='G3',
+            target_column='Exam_Score',
             test_size=self.config['data']['test_size'],
             random_state=self.config['data']['random_state']
         )
+        self.results['feature_names'] = self.preprocessor.get_feature_names()
         
         # Store preprocessing information
-        self.results['preprocessing_info'] = self.preprocessor.get_preprocessing_info()
-        self.results['feature_names'] = self.preprocessor.get_feature_names()
+        self.results['preprocessing_info'] = {
+            'train_samples': X_train.shape[0],
+            'test_samples': X_test.shape[0],
+            'features': X_train.shape[1],
+            'target_column': 'Exam_Score',
+            'test_size': self.config['data']['test_size'],
+            'random_state': self.config['data']['random_state']
+        }
         
         print(f"Data preprocessed: {X_train.shape[0]} train, {X_test.shape[0]} test samples")
         print(f"Features: {X_train.shape[1]} columns")
-        
         return X_train, X_test, y_train, y_test
     
     def _train_model(self, X_train: np.ndarray, y_train: np.ndarray) -> None:
@@ -263,8 +261,16 @@ class ModelTrainer:
         # Load original data for correlation analysis
         df = self.collector.load_uci_dataset()
         
+        # Select only numeric columns for correlation analysis
+        numeric_df = df.select_dtypes(include=[np.number])
+        
+        # Check if target column exists in numeric data
+        if 'G3' not in numeric_df.columns:
+            print("Warning: Target column 'G3' not found in numeric data. Skipping correlation analysis.")
+            return
+        
         # Calculate correlations with target
-        correlations = df.corr()['G3'].sort_values(ascending=False)
+        correlations = numeric_df.corr()['G3'].sort_values(ascending=False)
         
         plt.figure(figsize=(10, 8))
         correlations[correlations.index != 'G3'].plot(kind='bar', color='lightcoral')

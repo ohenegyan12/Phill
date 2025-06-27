@@ -252,176 +252,36 @@ def show_home_page(df):
         st.plotly_chart(fig, use_container_width=True)
 
 def show_prediction_page(model, preprocessor):
-    """Display the prediction page"""
+    """Display the prediction page (updated UI)"""
     st.markdown("## 📈 Student Performance Prediction")
-    
     st.markdown("""
     <div class="info-box">
-        💡 <strong>How to use:</strong> Fill in the student information below and click "Predict Performance" to get an accurate prediction of their final grade.
+        💡 <strong>How to use:</strong> Fill in the student information below and click "Predict" to get an accurate prediction of their exam score.
     </div>
     """, unsafe_allow_html=True)
-    
-    # Create input form with better organization
+
     with st.form("prediction_form"):
-        st.markdown("### 📚 Academic Information")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("#### Previous Performance")
-            g1 = st.slider("First Period Grade (G1)", 0, 20, 12, 
-                          help="Grade from the first period (0-20 scale)")
-            g2 = st.slider("Second Period Grade (G2)", 0, 20, 12, 
-                          help="Grade from the second period (0-20 scale)")
-            failures = st.slider("Number of Past Failures", 0, 4, 0, 
-                               help="How many times the student has failed in the past")
-            studytime = st.selectbox("Study Time", [1, 2, 3, 4], 
-                                   format_func=lambda x: {
-                                       1: "Less than 2 hours",
-                                       2: "2 to 5 hours", 
-                                       3: "5 to 10 hours",
-                                       4: "More than 10 hours"
-                                   }[x], help="Weekly study time")
-        
-        with col2:
-            st.markdown("#### Attendance & Health")
-            absences = st.slider("Number of Absences", 0, 30, 5, 
-                               help="Total number of school absences")
-            health = st.slider("Health Status", 1, 5, 3, 
-                             help="Current health status (1=very poor, 5=excellent)")
-            age = st.slider("Age", 15, 22, 17, help="Student's age")
-        
-        st.markdown("### 👨‍👩‍👧‍👦 Family & Personal Factors")
-        
-        col3, col4 = st.columns(2)
-        
-        with col3:
-            st.markdown("#### Family Background")
-            famrel = st.slider("Family Relationship Quality", 1, 5, 4, 
-                             help="Quality of family relationships (1=poor, 5=excellent)")
-            freetime = st.slider("Free Time After School", 1, 5, 3, 
-                               help="Amount of free time after school (1=very low, 5=very high)")
-            goout = st.slider("Going Out with Friends", 1, 5, 3, 
-                            help="Frequency of going out with friends (1=very low, 5=very high)")
-        
-        with col4:
-            st.markdown("#### Lifestyle Factors")
-            # Default values for other features
-            input_data = {
-                'school': 'GP', 'sex': 'F', 'age': age, 'address': 'U',
-                'famsize': 'GT3', 'Pstatus': 'T', 'Medu': 2, 'Fedu': 2,
-                'Mjob': 'other', 'Fjob': 'other', 'reason': 'home', 'guardian': 'mother',
-                'traveltime': 2, 'studytime': studytime, 'failures': failures,
-                'schoolsup': 'no', 'famsup': 'yes', 'paid': 'no',
-                'activities': 'no', 'nursery': 'yes', 'higher': 'yes',
-                'internet': 'yes', 'romantic': 'no', 'famrel': famrel,
-                'freetime': freetime, 'goout': goout, 'Dalc': 1, 'Walc': 1,
-                'health': health, 'absences': absences, 'G1': g1, 'G2': g2
-            }
-        
-        submitted = st.form_submit_button("🎯 Predict Performance", use_container_width=True)
-        
+        st.markdown("### Enter Student Data to Predict Performance")
+        hours_studied = st.number_input("Hours Studied", min_value=0.0, max_value=100.0, value=5.0, help="Enter the number of hours the student studied for the exam.")
+        previous_score = st.number_input("Previous Test Score", min_value=0.0, max_value=100.0, value=75.0, help="Enter the score from the student's previous test (0-100).")
+        attendance = st.number_input("Attendance Percentage", min_value=0.0, max_value=100.0, value=90.0, help="Enter the attendance rate in percentage (0-100%).")
+        extracurricular = st.selectbox("Extra-Curricular Participation (Yes=1, No=0)", options=[1, 0], format_func=lambda x: "Yes" if x == 1 else "No", help="Enter 1 if the student participates in extra-curricular activities, 0 otherwise.")
+        parent_edu = st.selectbox("Parent's Education Level (1=High School, 2=Undergraduate, 3=Graduate)", options=[1, 2, 3], format_func=lambda x: {1: 'High School', 2: 'Undergraduate', 3: 'Graduate'}[x], help="Enter the highest education level of the student's parents: 1 for High School, 2 for Undergraduate, and 3 for Graduate.")
+        submitted = st.form_submit_button("Predict")
+
         if submitted:
             try:
+                input_data = {
+                    'Hours_Studied': hours_studied,
+                    'Previous_Scores': previous_score,
+                    'Attendance': attendance,
+                    'Extracurricular_Activities': extracurricular,
+                    'Parental_Education_Level': parent_edu
+                }
                 input_df = pd.DataFrame([input_data])
                 X_transformed = preprocessor.transform_new_data(input_df)
                 prediction = model.predict(X_transformed)[0][0]
-                
-                # Display prediction with better styling
-                if prediction >= 16:
-                    grade_class = "grade-a"
-                    grade_letter = "A"
-                    grade_message = "Excellent performance! Keep up the great work!"
-                    grade_emoji = "🏆"
-                elif prediction >= 14:
-                    grade_class = "grade-b"
-                    grade_letter = "B"
-                    grade_message = "Good performance! You're on the right track!"
-                    grade_emoji = "👍"
-                elif prediction >= 12:
-                    grade_class = "grade-c"
-                    grade_letter = "C"
-                    grade_message = "Average performance. There's room for improvement."
-                    grade_emoji = "📚"
-                elif prediction >= 10:
-                    grade_class = "grade-d"
-                    grade_letter = "D"
-                    grade_message = "Below average performance. Consider seeking additional support."
-                    grade_emoji = "⚠️"
-                else:
-                    grade_class = "grade-f"
-                    grade_letter = "F"
-                    grade_message = "Needs significant improvement. Please seek academic support."
-                    grade_emoji = "🚨"
-                
-                st.markdown(f"""
-                <div class="prediction-card {grade_class}">
-                    <h2>{grade_emoji} Predicted Final Grade</h2>
-                    <h1 style="font-size: 4rem; margin: 1rem 0;">{prediction:.1f}</h1>
-                    <h3>Grade: {grade_letter}</h3>
-                    <p style="font-size: 1.2rem;">{grade_message}</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Show input summary
-                st.markdown("### 📋 Input Summary")
-                summary_data = {
-                    "Category": ["Academic", "Academic", "Academic", "Academic", "Academic",
-                               "Personal", "Personal", "Personal", "Personal", "Personal",
-                               "Family", "Family", "Family", "Family", "Family",
-                               "Lifestyle", "Lifestyle", "Lifestyle", "Lifestyle"],
-                    "Feature": ["G1", "G2", "Failures", "Study Time", "Absences",
-                              "Age", "Health", "Family Relations", "Free Time", "Going Out",
-                              "Mother's Education", "Father's Education", "Family Support", "Paid Classes", "Guardian",
-                              "Internet", "Romantic", "Activities", "Alcohol Consumption"],
-                    "Value": [g1, g2, failures, studytime, absences,
-                             age, health, famrel, freetime, goout,
-                             "Secondary", "Secondary", "Yes", "No", "Mother",
-                             "Yes", "No", "No", "Low"]
-                }
-                
-                summary_df = pd.DataFrame(summary_data)
-                st.dataframe(summary_df, use_container_width=True, hide_index=True)
-                
-                # Recommendations
-                st.markdown("### 💡 Recommendations")
-                if prediction < 12:
-                    st.markdown("""
-                    <div class="warning-box">
-                        <strong>📚 Academic Support Needed:</strong>
-                        <ul>
-                            <li>Consider additional tutoring or study groups</li>
-                            <li>Increase study time and improve study habits</li>
-                            <li>Seek help from teachers or academic advisors</li>
-                            <li>Focus on improving attendance and participation</li>
-                        </ul>
-                    </div>
-                    """, unsafe_allow_html=True)
-                elif prediction < 14:
-                    st.markdown("""
-                    <div class="info-box">
-                        <strong>📈 Improvement Opportunities:</strong>
-                        <ul>
-                            <li>Set specific academic goals</li>
-                            <li>Develop better time management skills</li>
-                            <li>Consider joining study groups</li>
-                            <li>Maintain regular attendance</li>
-                        </ul>
-                    </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown("""
-                    <div class="success-box">
-                        <strong>🎯 Keep Up the Great Work:</strong>
-                        <ul>
-                            <li>Maintain current study habits</li>
-                            <li>Continue participating in class</li>
-                            <li>Consider challenging yourself with advanced topics</li>
-                            <li>Help other students who might be struggling</li>
-                        </ul>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
+                st.success(f"Predicted Exam Score: {prediction:.1f}")
             except Exception as e:
                 st.error(f"❌ Error making prediction: {str(e)}")
 
@@ -589,7 +449,7 @@ def show_about_page():
     
     1. Navigate to "Predict Performance"
     2. Input student information using the form
-    3. Click "Predict Performance" to get results
+    3. Click "Predict" to get results
     4. Review the prediction and recommendations
     5. Explore data insights for deeper understanding
     
